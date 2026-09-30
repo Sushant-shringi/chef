@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import sys
 from google import genai
 from typing import List
 import re
@@ -11,7 +12,8 @@ load_dotenv()
 # ==========================
 # ⚡ Gemini API Key Configuration
 # ==========================
-api_key = os.getenv("GEMINI_API_KEY") or (st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets else None)
+def get_api_key():
+    return os.getenv("GEMINI_API_KEY") or (st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets else None)
 
 # ==========================
 # Utility Functions
@@ -109,55 +111,60 @@ Instructions
     return text.strip()
 
 # ==========================
-# Streamlit UI
+# Streamlit App Runner
 # ==========================
 
-st.set_page_config(page_title="ChefRemy AI — Generative AI Meal Planner", page_icon="🍳", layout="wide")
+def run_app():
+    st.set_page_config(page_title="ChefRemy AI — Generative AI Meal Planner", page_icon="🍳", layout="wide")
+    api_key = get_api_key()
 
-# Sidebar for settings & API key
-with st.sidebar:
-    st.header("⚙️ Configuration")
-    if not api_key:
-        user_key = st.text_input("Gemini API Key:", type="password", placeholder="Enter your Gemini API key")
-        if user_key:
-            active_key = user_key
+    # Sidebar for settings & API key
+    with st.sidebar:
+        st.header("⚙️ Configuration")
+        if not api_key:
+            user_key = st.text_input("Gemini API Key:", type="password", placeholder="Enter your Gemini API key")
+            if user_key:
+                active_key = user_key
+            else:
+                active_key = None
+                st.warning("⚠️ Enter a Gemini API Key to enable recipe generation.")
         else:
-            active_key = None
-            st.warning("⚠️ Enter a Gemini API Key to enable recipe generation.")
-    else:
-        active_key = api_key
-        st.success("✅ Gemini API Key detected")
-        
-    st.markdown("---")
-    st.markdown("### 🧠 Model Info")
-    st.write("**Engine:** `gemini-2.5-flash`")
-    st.write("**SDK:** `google-genai`")
-    st.write("**Strategy:** Few-Shot In-Context Learning & Persona Prompting")
+            active_key = api_key
+            st.success("✅ Gemini API Key detected")
+            
+        st.markdown("---")
+        st.markdown("### 🧠 Model Info")
+        st.write("**Engine:** `gemini-2.5-flash`")
+        st.write("**SDK:** `google-genai`")
+        st.write("**Strategy:** Few-Shot In-Context Learning & Persona Prompting")
 
-st.title("🍳 ChefRemy AI — Personal Chef & Meal Planner")
-st.caption("Powered by **Google Gemini 2.5 Flash** • Zero-Waste Recipe Synthesis • Strict Dietary Guardrails")
+    st.title("🍳 ChefRemy AI — Personal Chef & Meal Planner")
+    st.caption("Powered by **Google Gemini 2.5 Flash** • Zero-Waste Recipe Synthesis • Strict Dietary Guardrails")
 
-col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([2, 1])
 
-with col1:
-    ingredients_input = st.text_input(
-        "Enter available ingredients (comma-separated):",
-        placeholder="e.g. eggs, tomatoes, spinach, garlic, onion"
-    )
+    with col1:
+        ingredients_input = st.text_input(
+            "Enter available ingredients (comma-separated):",
+            placeholder="e.g. eggs, tomatoes, spinach, garlic, onion"
+        )
 
-with col2:
-    diet_input = st.selectbox(
-        "Dietary restriction:", 
-        ["None", "Vegan", "Keto", "Vegetarian", "Gluten-Free"]
-    )
+    with col2:
+        diet_input = st.selectbox(
+            "Dietary restriction:", 
+            ["None", "Vegan", "Keto", "Vegetarian", "Gluten-Free"]
+        )
 
-if st.button("🍳 Generate Recipe", type="primary"):
-    try:
-        ingredients = clean_ingredients(ingredients_input)
-        diet = validate_diet(diet_input)
-        with st.spinner("Chef Remy is synthesizing your recipe... 🍲"):
-            recipe = generate_recipe(ingredients, diet, active_key)
-        st.success("✨ Recipe generated successfully!")
-        st.text_area("Your Structured Recipe:", recipe, height=350)
-    except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
+    if st.button("🍳 Generate Recipe", type="primary"):
+        try:
+            ingredients = clean_ingredients(ingredients_input)
+            diet = validate_diet(diet_input)
+            with st.spinner("Chef Remy is synthesizing your recipe... 🍲"):
+                recipe = generate_recipe(ingredients, diet, active_key)
+            st.success("✨ Recipe generated successfully!")
+            st.text_area("Your Structured Recipe:", recipe, height=350)
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
+
+if __name__ == "__main__":
+    run_app()
